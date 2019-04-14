@@ -94,4 +94,52 @@ describe('req.host', () => {
       });
     });
   });
+
+  describe('when Forwarded is present', () => {
+    describe('and proxy is not trusted', () => {
+      it('should be ignored on HTTP/1', () => {
+        const req = request();
+        req.header['forwarded'] = 'for=127.0.0.1;proto=http;host=koajs.com,host=eggjs.org';
+        req.header['x-forwarded-host'] = 'bar.com';
+        req.header.host = 'foo.com';
+        assert.equal(req.host, 'foo.com');
+      });
+
+      it('should be ignored on HTTP/2', () => {
+        const req = request({
+          'httpVersionMajor': 2,
+          'httpVersion': '2.0'
+        });
+        req.header['forwarded'] = 'for=127.0.0.1;proto=http;host=koajs.com,host=eggjs.org';
+        req.header['x-forwarded-host'] = 'proxy.com:8080';
+        req.header[':authority'] = 'foo.com:3000';
+        req.header.host = 'bar.com:8000';
+        assert.equal(req.host, 'foo.com:3000');
+      });
+    });
+
+    describe('and proxy is trusted', () => {
+      it('should be used on HTTP/1', () => {
+        const req = request();
+        req.app.proxy = true;
+        req.header['forwarded'] = 'for=127.0.0.1;proto=http;host=koajs.com,host=eggjs.org';
+        req.header['x-forwarded-host'] = 'bar.com, baz.com';
+        req.header.host = 'foo.com';
+        assert.equal(req.host, 'koajs.com');
+      });
+
+      it('should be used on HTTP/2', () => {
+        const req = request({
+          'httpVersionMajor': 2,
+          'httpVersion': '2.0'
+        });
+        req.app.proxy = true;
+        req.header['forwarded'] = 'for=127.0.0.1;proto=http;host=koajs.com,host=eggjs.org';
+        req.header['x-forwarded-host'] = 'proxy.com:8080';
+        req.header[':authority'] = 'foo.com:3000';
+        req.header.host = 'bar.com:8000';
+        assert.equal(req.host, 'koajs.com');
+      });
+    });
+  });
 });

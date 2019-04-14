@@ -91,14 +91,14 @@ ctx.request.href;
 
 ### request.host
 
-  Get host (hostname:port) when present. Supports `X-Forwarded-Host`
+  Get host (hostname:port) when present. Supports `Forwarded` and `X-Forwarded-Host`
   when `app.proxy` is __true__, otherwise `Host` is used.
 
 ### request.hostname
 
-  Get hostname when present. Supports `X-Forwarded-Host`
+  Get hostname when present. Supports `Forwarded` and `X-Forwarded-Host`
   when `app.proxy` is __true__, otherwise `Host` is used.
-  
+
   If host is IPv6, Koa delegates parsing to
   [WHATWG URL API](https://nodejs.org/dist/latest-v8.x/docs/api/url.html#url_the_whatwg_url_api),
   *Note* This may impact performance.
@@ -176,7 +176,7 @@ ctx.body = await db.find('something');
 
 ### request.protocol
 
-  Return request protocol, "https" or "http". Supports `X-Forwarded-Proto`
+  Return request protocol, "https" or "http". Supports `Forwarded` and `X-Forwarded-Proto`
   when `app.proxy` is __true__.
 
 ### request.secure
@@ -186,14 +186,28 @@ ctx.body = await db.find('something');
 
 ### request.ip
 
-  Request remote address. Supports `X-Forwarded-For` when `app.proxy`
+  Request remote address. Supports `Forwarded` and `X-Forwarded-For` when `app.proxy`
   is __true__.
 
 ### request.ips
 
-  When `X-Forwarded-For` is present and `app.proxy` is enabled an array
+  When `Forwarded` or `X-Forwarded-For` is present and `app.proxy` is enabled an array
   of these ips is returned, ordered from upstream -> downstream. When disabled
   an empty array is returned.
+
+### request.forwarded
+
+  [RFC 7239](https://tools.ietf.org/html/rfc7239)
+
+  When `app.proxy` is enabled, will parse `Forwarded` or `X-Forwarded-`, an array
+  of `[ { for, host, proto, by }, ... ]` is returned, ordered from upstream -> downstream.
+  When `app.proxy` is disabled an empty array is returned.
+
+  `X-Forwarded-For` is used as fallback value of `Forwarded`, for example:
+
+  If `Forwarded: for:127.0.0.1; proto:https, for:127.0.0.2;` and `X-Forwarded-Proto: http, https`,
+  then `[ { host: '127.0.0.1', proto: 'https' }, { host: '127.0.0.2', proto: 'https' } ]`.
+  the first proto is read from `Forwarded`, and the second proto is use `X-Forwarded-Proto` as fallback.
 
 ### request.subdomains
 

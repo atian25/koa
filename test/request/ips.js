@@ -24,4 +24,26 @@ describe('req.ips', () => {
       });
     });
   });
+
+  describe('when Forwarded is present', () => {
+    describe('and proxy is not trusted', () => {
+      it('should be ignored', () => {
+        const req = request();
+        req.app.proxy = false;
+        req.header['x-forwarded-for'] = '127.0.0.1,127.0.0.2';
+        req.header['forwarded'] = 'for=127.0.0.1;proto=http;by=203.0.113.43,for=127.0.0.2';
+        assert.deepEqual(req.ips, []);
+      });
+    });
+
+    describe('and proxy is trusted', () => {
+      it('should be used', () => {
+        const req = request();
+        req.app.proxy = true;
+        req.header['x-forwarded-for'] = '127.0.0.100,127.0.0.200';
+        req.header['forwarded'] = 'for=127.0.0.1;proto=http;by=203.0.113.43,for="127.0.0.2"';
+        assert.deepEqual(req.ips, ['127.0.0.1', '127.0.0.2']);
+      });
+    });
+  });
 });

@@ -21,7 +21,7 @@ describe('req.protocol', () => {
     });
   });
 
-  describe('when X-Forwarded-Proto is set', () => {
+  describe('when X-Forwarded-Proto is present', () => {
     describe('and proxy is trusted', () => {
       it('should be used', () => {
         const req = request();
@@ -46,6 +46,38 @@ describe('req.protocol', () => {
       it('should not be used', () => {
         const req = request();
         req.req.socket = {};
+        req.header['x-forwarded-proto'] = 'https, http';
+        assert.equal(req.protocol, 'http');
+      });
+    });
+  });
+
+  describe('when Forwarded is present', () => {
+    describe('and proxy is trusted', () => {
+      it('should be used', () => {
+        const req = request();
+        req.app.proxy = true;
+        req.req.socket = {};
+        req.header['forwarded'] = 'for=127.0.0.1;proto=https,proto=http';
+        req.header['x-forwarded-proto'] = 'http, https';
+        assert.equal(req.protocol, 'https');
+      });
+
+      it('should use x-forwarded as default', () => {
+        const req = request();
+        req.app.proxy = true;
+        req.req.socket = {};
+        req.header['forwarded'] = 'for=127.0.0.1';
+        req.header['x-forwarded-proto'] = 'https, http';
+        assert.equal(req.protocol, 'https');
+      });
+    });
+
+    describe('and proxy is not trusted', () => {
+      it('should not be used', () => {
+        const req = request();
+        req.req.socket = {};
+        req.header['forwarded'] = 'for=127.0.0.1;proto=https,proto=http';
         req.header['x-forwarded-proto'] = 'https, http';
         assert.equal(req.protocol, 'http');
       });
